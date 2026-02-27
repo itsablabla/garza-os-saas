@@ -69,7 +69,7 @@ export default function Dashboard() {
       id: `agent_${Math.random().toString(36).substr(2, 9)}`,
       name,
       model: 'claude-3-sonnet-20240229',
-      status: Math.random() > 0.3 ? 'active' : 'offline',
+      status: 'active',
       created_at: new Date().toISOString(),
     }
 
