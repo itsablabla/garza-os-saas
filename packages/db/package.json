@@ -1,0 +1,16 @@
+{
+  "name": "@garza/db",
+  "version": "1.0.0",
+  "scripts": {
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio",
+    "generate": "drizzle-kit generate:pg"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.30.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.0"
+  }
+}

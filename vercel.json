@@ -1,0 +1,26 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "apps/api/.next",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "POLAR_ACCESS_TOKEN": "@polar_access_token",
+    "POLAR_WEBHOOK_SECRET": "@polar_webhook_secret",
+    "POLAR_ORGANIZATION_ID": "@polar_organization_id"
+  },
+  "functions": {
+    "api/**": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

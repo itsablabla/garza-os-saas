@@ -1,0 +1,21 @@
+{
+  "name": "@garza/api",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@garza/db": "*",
+    "@vercel/postgres": "^0.5.0",
+    "drizzle-orm": "^0.30.0",
+    "next": "^14.0.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "typescript": "^5.3.0"
+  }
+}
