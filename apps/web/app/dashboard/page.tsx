@@ -18,11 +18,10 @@ interface SystemMetrics {
 }
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null)
   const [agents, setAgents] = useState<Agent[]>([])
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
   const [theme, setTheme] = useState('midnight')
-  const [view, setView] = useState('list') // list, 3d, metrics, crons, memory
+  const [view, setView] = useState('list')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -34,15 +33,16 @@ export default function Dashboard() {
       return
     }
 
-    // Fetch agents
-    fetch(`/api/goclaw/${userId}/agents`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setAgents(data.agents || [])
-        setLoading(false)
-      })
+    // Load agents from localStorage
+    const savedAgents = localStorage.getItem(`agents_${userId}`)
+    if (savedAgents) {
+      try {
+        setAgents(JSON.parse(savedAgents))
+      } catch (e) {
+        setAgents([])
+      }
+    }
+    setLoading(false)
 
     // Simulate metrics
     setMetrics({
@@ -52,6 +52,35 @@ export default function Dashboard() {
       uptime: 99.9,
     })
   }, [])
+
+  const saveAgents = (newAgents: Agent[]) => {
+    const userId = localStorage.getItem('userId')
+    if (userId) {
+      localStorage.setItem(`agents_${userId}`, JSON.stringify(newAgents))
+    }
+    setAgents(newAgents)
+  }
+
+  const createAgent = () => {
+    const name = prompt('Agent name:')
+    if (!name) return
+
+    const newAgent: Agent = {
+      id: `agent_${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      model: 'claude-3-sonnet-20240229',
+      status: Math.random() > 0.3 ? 'active' : 'offline',
+      created_at: new Date().toISOString(),
+    }
+
+    saveAgents([...agents, newAgent])
+  }
+
+  const deleteAgent = (id: string) => {
+    if (confirm('Delete this agent?')) {
+      saveAgents(agents.filter(a => a.id !== id))
+    }
+  }
 
   const themes = {
     midnight: {
@@ -158,7 +187,11 @@ export default function Dashboard() {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={() => setTheme(theme === 'midnight' ? 'nord' : 'light')}
+            onClick={() => {
+              const themes_list = ['midnight', 'nord', 'light']
+              const next = themes_list[(themes_list.indexOf(theme) + 1) % themes_list.length]
+              setTheme(next)
+            }}
             style={{
               padding: '10px 15px',
               background: currentTheme.accent,
@@ -198,6 +231,7 @@ export default function Dashboard() {
           marginBottom: '30px',
           borderBottom: `1px solid ${currentTheme.surface}`,
           paddingBottom: '15px',
+          overflowX: 'auto',
         }}
       >
         {[
@@ -219,6 +253,7 @@ export default function Dashboard() {
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: view === tab.id ? 'bold' : 'normal',
+              whiteSpace: 'nowrap',
             }}
           >
             {tab.label}
@@ -229,13 +264,11 @@ export default function Dashboard() {
       {/* View: Agent List */}
       {view === 'list' && (
         <div>
-          <h2>Your Agents</h2>
-          {loading ? (
-            <p>Loading agents...</p>
-          ) : agents.length === 0 ? (
-            <p>No agents yet. Create one to get started!</p>
+          <h2>Your Agents ({agents.length})</h2>
+          {agents.length === 0 ? (
+            <p style={{ color: '#999' }}>No agents yet. Create one to get started!</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
               {agents.map((agent) => (
                 <div
                   key={agent.id}
@@ -250,42 +283,43 @@ export default function Dashboard() {
                     {agent.name}
                   </div>
                   <div style={{ color: '#999', fontSize: '12px' }}>
-                    Model: {agent.model}
+                    Model: {agent.model.split('-')[0]}
                   </div>
                   <div
                     style={{
                       color: agent.status === 'active' ? '#4caf50' : '#f44336',
                       fontSize: '12px',
                       marginTop: '10px',
+                      fontWeight: 'bold',
                     }}
                   >
-                    Status: {agent.status}
+                    {agent.status === 'active' ? '🟢' : '🔴'} {agent.status}
                   </div>
-                  <div style={{ color: '#999', fontSize: '11px', marginTop: '5px' }}>
-                    Created: {new Date(agent.created_at).toLocaleDateString()}
+                  <div style={{ color: '#999', fontSize: '11px', marginTop: '8px' }}>
+                    {new Date(agent.created_at).toLocaleDateString()}
                   </div>
+                  <button
+                    onClick={() => deleteAgent(agent.id)}
+                    style={{
+                      marginTop: '10px',
+                      padding: '6px 10px',
+                      background: '#f44336',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
               ))}
             </div>
           )}
 
           <button
-            onClick={() => {
-              const name = prompt('Agent name:')
-              if (name) {
-                const userId = localStorage.getItem('userId')
-                const token = localStorage.getItem('token')
-                fetch(`/api/goclaw/${userId}/agents`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({ name }),
-                })
-                  .then(() => window.location.reload())
-              }
-            }}
+            onClick={createAgent}
             style={{
               marginTop: '20px',
               padding: '12px 20px',
@@ -295,6 +329,7 @@ export default function Dashboard() {
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 'bold',
+              fontSize: '14px',
             }}
           >
             + Create Agent
@@ -306,8 +341,8 @@ export default function Dashboard() {
       {view === '3d' && (
         <div>
           <h2>🏢 Agent Office (3D View)</h2>
-          <p style={{ color: '#999' }}>
-            Each desk represents one agent. Green = active, Red = offline
+          <p style={{ color: '#999', marginBottom: '15px' }}>
+            Each desk represents one agent. Green = active, Red = offline. Hover over desks for effects.
           </p>
           <div
             style={{
@@ -329,9 +364,11 @@ export default function Dashboard() {
                   left: '50%',
                   transform: 'translate(-50%, -50%)',
                   color: '#999',
+                  textAlign: 'center',
                 }}
               >
-                Create agents to see them in the office
+                <p style={{ fontSize: '18px', margin: '0 0 10px 0' }}>📭</p>
+                <p>No agents yet. Create one in the Agents tab!</p>
               </div>
             )}
           </div>
