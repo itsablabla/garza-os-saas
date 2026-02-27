@@ -11,11 +11,22 @@ export default function SignUp() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
+      // Try local first, then fallback to standalone API
+      let response
+      try {
+        response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+      } catch (e) {
+        // Fallback to standalone API
+        response = await fetch('https://garza-os-api-standalone.vercel.app/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+      }
 
       const data = await response.json()
 
